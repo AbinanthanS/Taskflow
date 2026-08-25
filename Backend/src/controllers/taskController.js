@@ -2,7 +2,6 @@ const { query } = require("../config/db");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 const { emitToBoard, logActivity } = require("../realtime");
-
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 
 const fetchTask = async (taskId) => {
@@ -91,7 +90,7 @@ const createTask = asyncHandler(async(req, res) => {
         ]
     );
 
-    const task = await fetchTasks(rows[0].id);
+    const task = await fetchTask(rows[0].id);
     emitToBoard(req.board.id, "task:created", task);
     await logActivity({
         boardId: req.board.id,
