@@ -33,7 +33,8 @@ const server = http.createServer(app);
 initSocket(server);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+server.listen(PORT, () => {
     console.log(`API listening to http://localhost:${PORT}`);
 });
 
