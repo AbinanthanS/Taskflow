@@ -13,7 +13,7 @@
 import { io } from "socket.io-client";
 import { getToken } from "./api";
 
-const URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5050";
+const URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
 let socket = null;
 
