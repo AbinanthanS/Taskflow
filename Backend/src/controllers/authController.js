@@ -6,6 +6,10 @@ const asyncHandler = require("../utils/asyncHandler");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Dummy hash used for timing-safe compare when the user doesn't exist.
+// Pre-computed at startup to avoid bcrypt cost on each failed login.
+const DUMMY_HASH = "$2b$10$invalidhashpaddingtomakecostsameXXXXXXXXXXXXXXXXXXXXXX";
+
 const publicUser = (u) => ({
     id: u.id,
     name: u.name,
@@ -14,15 +18,17 @@ const publicUser = (u) => ({
     created_at: u.created_at,
 });
 
-const register = asyncHandler(async (req,res) => {
+const register = asyncHandler(async (req, res) => {
     const name = (req.body.name || "").trim();
     const email = (req.body.email || "").trim().toLowerCase();
     const { password } = req.body;
 
     if (!name) throw ApiError.badRequest("Name is required");
     if (!EMAIL_RE.test(email)) throw ApiError.badRequest("A valid email is required");
-    if (!password || password.length < 6) 
-        throw ApiError.badRequest("Password must be at least 6 characters");
+    if (!password || password.length < 8)
+        throw ApiError.badRequest("Password must be at least 8 characters");
+    if (password.length > 72)
+        throw ApiError.badRequest("Password must be at most 72 characters");
 
     const existing = await query("SELECT id FROM users WHERE email = $1", [email]);
     if (existing.rows.length) throw ApiError.conflict("Email is already registered");
@@ -36,7 +42,7 @@ const register = asyncHandler(async (req,res) => {
     );
 
     const user = rows[0];
-    const token = signToken({ id: user.id, email: user.email, name: user.name});
+    const token = signToken({ id: user.id, email: user.email, name: user.name });
     res.status(201).json({ user: publicUser(user), token });
 });
 
@@ -46,15 +52,17 @@ const login = asyncHandler(async (req, res) => {
 
     if (!email || !password) throw ApiError.badRequest("Email and password are required");
 
-    const { rows } = await query("SELECT * FROM users WHERE email = $1",[email]);
+    const { rows } = await query("SELECT * FROM users WHERE email = $1", [email]);
     const user = rows[0];
-    if (!user) throw ApiError.unauthorized("Invalid email or password");
 
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) throw ApiError.unauthorized("Invalid email or password");
+    // Always run bcrypt.compare to prevent timing-based user enumeration.
+    const hashToCompare = user ? user.password_hash : DUMMY_HASH;
+    const valid = await bcrypt.compare(password, hashToCompare);
+
+    if (!user || !valid) throw ApiError.unauthorized("Invalid email or password");
 
     const token = signToken({ id: user.id, email: user.email, name: user.name });
-    res.json({ user: publicUser(user), token});
+    res.json({ user: publicUser(user), token });
 });
 
 const me = asyncHandler(async (req, res) => {
@@ -63,7 +71,7 @@ const me = asyncHandler(async (req, res) => {
         [req.user.id],
     );
     if (!rows.length) throw ApiError.notFound("User not found");
-    res.json({user: rows[0]});
+    res.json({ user: rows[0] });
 });
 
-module.exports = { register, login, me};
+module.exports = { register, login, me };

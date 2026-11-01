@@ -97,36 +97,78 @@ const Dashboard = () => {
           </div>
 
           {/* KPIs */}
-          <div className="mb-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
-              featured
-              label="Total boards"
-              value={stats.total}
-              hint="Across your workspace"
-              trend={trends.boards}
-              icon={FolderKanban}
-            />
-            <KpiCard
-              label="Total tasks"
-              value={stats.totalTasks}
-              hint={`${avgPerBoard} avg per board`}
-              trend={trends.tasks}
-              icon={CheckSquare}
-            />
-            <KpiCard
-              label="Owned by you"
-              value={stats.owned}
-              hint={`${ownedPct}% of workspace`}
-              trend={trends.owned}
-              icon={Crown}
-            />
-            <KpiCard
-              label="Shared with you"
-              value={stats.shared}
-              hint="From your teammates"
-              trend={trends.shared}
-              icon={Share2}
-            />
+          <div className="mb-5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+            <div className="card-interactive rounded-2xl p-5">
+              <div className="flex items-center justify-between text-muted">
+                <span className="text-xs font-semibold tracking-tight">Total Boards</span>
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-brand-50 text-brand-600 border border-brand-200/50">
+                  <FolderKanban className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold tabular text-ink">
+                  {stats.total}
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-600">Active</span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted">
+                {stats.owned} owned · {stats.shared} shared
+              </p>
+            </div>
+
+            <div className="card-interactive rounded-2xl p-5">
+              <div className="flex items-center justify-between text-muted">
+                <span className="text-xs font-semibold tracking-tight">Active Tasks</span>
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-sky-50 text-sky-600 border border-sky-200/50">
+                  <CheckSquare className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold tabular text-ink">
+                  {stats.totalTasks}
+                </span>
+                <span className="text-[11px] font-semibold text-sky-600">Across boards</span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted">
+                ~{avgPerBoard} avg per workspace
+              </p>
+            </div>
+
+            <div className="card-interactive rounded-2xl p-5">
+              <div className="flex items-center justify-between text-muted">
+                <span className="text-xs font-semibold tracking-tight">Ownership</span>
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200/50">
+                  <Crown className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold tabular text-ink">
+                  {ownedPct}%
+                </span>
+                <span className="text-[11px] font-semibold text-amber-600">Primary</span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted">
+                {stats.owned} created by you
+              </p>
+            </div>
+
+            <div className="card-interactive rounded-2xl p-5">
+              <div className="flex items-center justify-between text-muted">
+                <span className="text-xs font-semibold tracking-tight">Collaborative</span>
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-purple-50 text-purple-600 border border-purple-200/50">
+                  <Share2 className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-bold tabular text-ink">
+                  {stats.shared}
+                </span>
+                <span className="text-[11px] font-semibold text-purple-600">Shared</span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted">
+                Team boards in sync
+              </p>
+            </div>
           </div>
 
           {/* Insights — bento */}

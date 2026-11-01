@@ -22,28 +22,28 @@ const Modal = ({ open, onClose, title, description, children, footer, size = "md
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="fixed inset-0 bg-ink/35 backdrop-blur-sm" onClick={onClose} />
+          <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md transition-opacity" onClick={onClose} />
           <motion.div
             className={cn(
-              "card relative z-10 mt-8 w-full rounded-3xl p-6 shadow-[var(--shadow-lift)]",
+              "card relative z-10 mt-12 w-full rounded-2xl border border-line bg-surface/95 p-6 shadow-[var(--shadow-lift)] backdrop-blur-xl",
               widths[size]
             )}
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 8 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
             {(title || onClose) && (
-              <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="mb-5 flex items-start justify-between gap-4 border-b border-line pb-4">
                 <div>
-                  {title && <h2 className="font-display text-lg font-semibold tracking-tight">{title}</h2>}
-                  {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+                  {title && <h2 className="font-display text-lg font-bold tracking-tight text-ink">{title}</h2>}
+                  {description && <p className="mt-1 text-xs text-muted">{description}</p>}
                 </div>
                 <button
                   onClick={onClose}
-                  className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                  className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink"
                 >
-                  <X className="h-4.5 w-4.5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             )}

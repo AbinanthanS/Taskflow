@@ -6,13 +6,18 @@ const setIo = (instance) => {
     io = instance;
 };
 
+const getIo = () => io;
+
 const boardRoom = (boardId) => `board:${boardId}`;
+
+/** Each socket joins this room on connect so we can target the user's sockets. */
+const userRoom = (userId) => `user:${userId}`;
 
 const emitToBoard = (boardId, event, payload) => {
     if (io) io.to(boardRoom(boardId)).emit(event, payload);
 };
 
-const logActivity = async({ boardId, userId, action, message, metadata }) => {
+const logActivity = async ({ boardId, userId, action, message, metadata }) => {
     const { rows } = await query(
         `INSERT INTO activities (board_id, user_id, action, message, metadata)
          VALUES ($1, $2, $3, $4, $5)
@@ -22,7 +27,7 @@ const logActivity = async({ boardId, userId, action, message, metadata }) => {
             userId || null,
             action,
             message,
-            metadata ? JSON.stringify(metadata):null,
+            metadata ? JSON.stringify(metadata) : null,
          ],
     );
     const activity = rows[0];
@@ -30,4 +35,4 @@ const logActivity = async({ boardId, userId, action, message, metadata }) => {
     return activity;
 };
 
-module.exports = { setIo, emitToBoard, logActivity, boardRoom };
+module.exports = { setIo, getIo, emitToBoard, logActivity, boardRoom, userRoom };

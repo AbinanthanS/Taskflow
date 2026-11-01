@@ -15,7 +15,8 @@ const Register = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (form.password.length < 6) return toast.error("Password must be at least 6 characters");
+    if (form.password.length < 8) return toast.error("Password must be at least 8 characters");
+    if (form.password.length > 72) return toast.error("Password must be at most 72 characters");
     setLoading(true);
     try {
       await register(form);
@@ -67,7 +68,7 @@ const Register = () => {
               id="password"
               label="Password"
               type="password"
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               autoComplete="new-password"
               required
               value={form.password}

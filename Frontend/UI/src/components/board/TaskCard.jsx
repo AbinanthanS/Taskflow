@@ -22,42 +22,47 @@ const TaskCard = ({ task, onClick, overlay = false }) => {
       {...listeners}
       onClick={() => !isDragging && onClick?.(task)}
       className={cn(
-        "group cursor-grab rounded-2xl border border-line bg-surface p-4 active:cursor-grabbing",
-        "shadow-[var(--shadow-card)] transition-shadow duration-200",
-        "hover:shadow-[var(--shadow-soft)]",
-        isDragging && "opacity-40",
-        overlay && "rotate-2 cursor-grabbing shadow-[var(--shadow-lift)]"
+        "group relative cursor-grab rounded-xl border border-line bg-surface p-4 active:cursor-grabbing",
+        "shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-all duration-150 ease-[var(--ease-spring)]",
+        "hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[var(--shadow-soft)]",
+        isDragging && "opacity-30",
+        overlay && "rotate-2 cursor-grabbing shadow-[var(--shadow-lift)] ring-2 ring-brand-500/20"
       )}
     >
-      <PriorityTag priority={task.priority} />
+      <div className="flex items-center justify-between gap-2">
+        <PriorityTag priority={task.priority} />
+        {due && (
+          <span
+            className={cn(
+              "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular",
+              due.overdue
+                ? "bg-rose-50 text-rose-600 border border-rose-200/60"
+                : "bg-slate-100 text-slate-600 border border-slate-200/60"
+            )}
+          >
+            <Calendar className="h-2.5 w-2.5" /> {due.label}
+          </span>
+        )}
+      </div>
 
-      <p className="mt-2.5 text-[15px] font-semibold leading-snug tracking-tight text-ink">{task.title}</p>
+      <p className="mt-2.5 text-sm font-semibold leading-snug tracking-tight text-ink group-hover:text-brand-700 transition-colors">
+        {task.title}
+      </p>
 
       {task.description && (
-        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
           {task.description}
         </p>
       )}
 
-      <div className="mt-3.5 flex items-center justify-between border-t border-line/70 pt-3">
+      <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-2.5">
         {task.assignee_id ? (
           <div className="flex items-center gap-1.5">
             <Avatar name={task.assignee_name} id={task.assignee_id} src={task.assignee_avatar} size="xs" />
-            <span className="max-w-[7rem] truncate text-[11px] text-muted">{task.assignee_name}</span>
+            <span className="max-w-[7.5rem] truncate text-[11px] font-medium text-muted">{task.assignee_name}</span>
           </div>
         ) : (
-          <span className="text-[11px] text-faint">Unassigned</span>
-        )}
-
-        {due && (
-          <span
-            className={cn(
-              "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium tabular",
-              due.overdue ? "bg-priority-urgent/10 text-priority-urgent" : "bg-surface-2 text-muted"
-            )}
-          >
-            <Calendar className="h-3 w-3" /> {due.label}
-          </span>
+          <span className="text-[11px] font-medium text-faint">Unassigned</span>
         )}
       </div>
     </div>

@@ -20,48 +20,48 @@ const Topbar = ({ title, subtitle, actions, onCreateBoard }) => {
   }, []);
 
   return (
-    <header className="glass sticky top-0 z-20 flex h-[72px] items-center gap-4 border-b px-6">
+    <header className="glass sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-line/80 px-6 backdrop-blur-xl">
       <div className="min-w-0 shrink">
         {title && <h1 className="truncate font-display text-lg font-bold leading-tight tracking-tight text-ink">{title}</h1>}
-        {subtitle && <p className="truncate text-xs text-muted">{subtitle}</p>}
+        {subtitle && <p className="truncate text-xs font-medium text-muted">{subtitle}</p>}
       </div>
 
       <div className="ml-auto flex items-center gap-2.5">
         {/* Search → command menu */}
         <button
           onClick={openCommand}
-          className="hidden h-10 w-56 items-center gap-2.5 rounded-full border border-line bg-surface px-4 text-sm text-faint shadow-[var(--shadow-card)] transition-all duration-200 hover:border-brand-300 hover:text-muted hover:shadow-[var(--shadow-soft)] md:flex lg:w-64"
+          className="hidden h-9 w-60 items-center gap-2.5 rounded-xl border border-line bg-surface/80 px-3.5 text-xs text-muted shadow-xs transition-all duration-150 hover:border-slate-300 hover:bg-surface hover:text-ink md:flex lg:w-72"
         >
-          <Search className="h-4 w-4 shrink-0" />
+          <Search className="h-3.5 w-3.5 shrink-0 text-faint" />
           <span className="flex-1 text-left">Search tasks, boards…</span>
-          <kbd className="flex items-center gap-0.5 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-muted">
-            <Command className="h-3 w-3" />K
+          <kbd className="flex items-center gap-0.5 rounded-md border border-line bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-muted shadow-2xs">
+            <Command className="h-2.5 w-2.5" />K
           </kbd>
         </button>
 
         {actions}
 
         <button
-          className="hidden h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-muted shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-px hover:text-ink hover:shadow-[var(--shadow-soft)] sm:flex"
+          className="hidden h-9 w-9 items-center justify-center rounded-xl border border-line bg-surface text-muted shadow-xs transition-all duration-150 hover:border-slate-300 hover:text-ink hover:shadow-sm sm:flex"
           title="Notifications"
         >
-          <Bell className="h-4.5 w-4.5" />
+          <Bell className="h-4 w-4" />
         </button>
 
-        <Button size="md" onClick={onCreateBoard} className="hidden sm:inline-flex">
-          <Plus className="h-4 w-4" /> New board
+        <Button size="sm" onClick={onCreateBoard} className="hidden sm:inline-flex shadow-sm">
+          <Plus className="h-3.5 w-3.5" /> New board
         </Button>
 
         <div className="relative" ref={ref}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5 shadow-[var(--shadow-card)] transition-all duration-200 hover:border-brand-300 hover:shadow-[var(--shadow-soft)]"
+            className="flex items-center gap-2 rounded-xl border border-line bg-surface p-1 pr-2.5 shadow-xs transition-all duration-150 hover:border-slate-300 hover:shadow-sm"
           >
             <Avatar name={user?.name} id={user?.id} src={user?.avatar_url} size="sm" />
-            <span className="hidden max-w-[7rem] truncate text-sm font-medium text-ink lg:block">
+            <span className="hidden max-w-[7rem] truncate text-xs font-semibold text-ink lg:block">
               {user?.name?.split(" ")[0]}
             </span>
-            <ChevronDown className="h-4 w-4 text-faint" />
+            <ChevronDown className="h-3.5 w-3.5 text-faint" />
           </button>
 
           {menuOpen && (

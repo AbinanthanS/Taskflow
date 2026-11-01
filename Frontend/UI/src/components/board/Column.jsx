@@ -32,14 +32,13 @@ const Column = ({ column, tasks, index = 0, onTaskClick, onAddTask, onRename, on
   return (
     <div
       className={cn(
-        "flex h-full w-[330px] shrink-0 flex-col rounded-2xl p-2.5 transition-colors",
-        isOver && "ring-2 ring-inset"
+        "flex h-full w-[320px] shrink-0 flex-col rounded-2xl border border-line/70 bg-surface-2/60 p-3 backdrop-blur-sm transition-all duration-200",
+        isOver && "ring-2 ring-brand-500/40 bg-brand-50/20"
       )}
-      style={{ backgroundColor: accent.soft, ...(isOver ? { "--tw-ring-color": accent.ring } : {}) }}
     >
       {/* Header */}
-      <div className="mb-2 flex items-center gap-2 px-1.5 pt-1">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accent.dot }} />
+      <div className="mb-3 flex items-center gap-2 px-1 pt-0.5">
+        <span className="h-2 w-2 rounded-full shadow-xs" style={{ backgroundColor: accent.dot }} />
         {editing ? (
           <input
             autoFocus
@@ -47,24 +46,24 @@ const Column = ({ column, tasks, index = 0, onTaskClick, onAddTask, onRename, on
             onChange={(e) => setTitle(e.target.value)}
             onBlur={commitRename}
             onKeyDown={(e) => e.key === "Enter" && commitRename()}
-            className="w-full rounded bg-surface px-2 py-0.5 text-sm font-semibold outline-none"
+            className="w-full rounded-lg border border-brand-500 bg-surface px-2 py-0.5 text-xs font-bold outline-none shadow-xs"
           />
         ) : (
-          <h3 className="cursor-text font-display text-[15px] font-bold tracking-tight text-ink" onDoubleClick={() => setEditing(true)}>
+          <h3 className="cursor-text font-display text-sm font-bold tracking-tight text-ink" onDoubleClick={() => setEditing(true)}>
             {column.title}
           </h3>
         )}
-        <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold tabular text-muted shadow-[var(--shadow-card)]">
+        <span className="rounded-md border border-line bg-surface px-1.5 py-0.5 text-[10px] font-bold tabular text-muted shadow-2xs">
           {tasks.length}
         </span>
 
         <div className="ml-auto flex items-center gap-0.5">
           <button
             onClick={() => onAddTask(column.id)}
-            className="rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink"
+            className="rounded-lg p-1 text-muted transition-colors hover:bg-surface hover:text-ink shadow-2xs"
             title="Add task"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
           </button>
           <div className="relative" ref={menuRef}>
             <button

@@ -11,9 +11,9 @@ import { cn } from "../../lib/utils";
 // Section eyebrow (hidden when collapsed)
 const SectionLabel = ({ children, collapsed }) =>
   collapsed ? (
-    <div className="mx-auto my-2 h-px w-6 bg-line" />
+    <div className="mx-auto my-2 h-px w-5 bg-line" />
   ) : (
-    <p className="px-4 pb-1.5 pt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">
+    <p className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-faint">
       {children}
     </p>
   );
@@ -25,23 +25,23 @@ const NavItem = ({ to, icon: Icon, label, collapsed, badge }) => (
     title={collapsed ? label : undefined}
     className={({ isActive }) =>
       cn(
-        "group relative flex h-11 items-center rounded-2xl text-sm font-medium transition-colors duration-200",
-        collapsed ? "mx-auto w-11 justify-center" : "gap-3 px-3",
+        "group relative flex h-10 items-center rounded-xl text-xs font-semibold transition-all duration-150",
+        collapsed ? "mx-auto w-10 justify-center" : "gap-3 px-3",
         isActive
-          ? "bg-brand-50 font-semibold text-brand-700"
-          : "text-muted hover:bg-surface-2 hover:text-ink"
+          ? "bg-brand-50/90 text-brand-700 shadow-xs border border-brand-200/60"
+          : "text-muted hover:bg-surface-2 hover:text-ink border border-transparent"
       )
     }
   >
     {({ isActive }) => (
       <>
         {isActive && !collapsed && (
-          <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-500" />
+          <span className="absolute left-0 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full bg-brand-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
         )}
-        <Icon className="h-5 w-5 shrink-0" />
-        {!collapsed && <span className="flex-1 truncate">{label}</span>}
+        <Icon className={cn("h-4 w-4 shrink-0 transition-transform group-hover:scale-105", isActive && "text-brand-600")} />
+        {!collapsed && <span className="flex-1 truncate tracking-tight">{label}</span>}
         {!collapsed && badge != null && (
-          <span className="rounded-full bg-ink px-1.5 py-0.5 text-[10px] font-bold tabular text-bg">
+          <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold tabular text-white">
             {badge}
           </span>
         )}
@@ -58,19 +58,24 @@ const Sidebar = ({ collapsed, onToggle, onCreateBoard, onCommand }) => {
   return (
     <aside
       className={cn(
-        "fixed inset-y-3 left-3 z-40 hidden flex-col overflow-hidden rounded-3xl border border-line bg-surface/90 shadow-soft backdrop-blur-xl transition-[width] duration-300 ease-[var(--ease-spring)] md:flex",
-        collapsed ? "w-[72px]" : "w-[252px]"
+        "fixed inset-y-3 left-3 z-40 hidden flex-col overflow-hidden rounded-2xl border border-line bg-surface/95 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-[width] duration-300 ease-[var(--ease-spring)] md:flex",
+        collapsed ? "w-[68px]" : "w-[248px]"
       )}
     >
       {/* Header */}
-      <div className="flex h-16 items-center gap-2.5 px-3.5">
-        <div className="brand-gradient grid h-10 w-10 shrink-0 place-items-center rounded-2xl shadow-[var(--shadow-brand)]">
-          <Zap className="h-5 w-5 fill-white text-white" />
+      <div className="flex h-16 items-center gap-2.5 border-b border-line/60 px-3.5">
+        <div className="brand-gradient grid h-9 w-9 shrink-0 place-items-center rounded-xl shadow-[var(--shadow-brand)]">
+          <Zap className="h-4.5 w-4.5 fill-white text-white" />
         </div>
         {!collapsed && (
-          <span className="flex-1 truncate font-display text-[17px] font-bold tracking-tight text-ink">
-            Flowboard
-          </span>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <span className="truncate font-display text-[15px] font-bold tracking-tight text-ink">
+              Flowboard
+            </span>
+            <span className="text-[10px] font-medium tracking-wide text-brand-600">
+              WORKSPACE
+            </span>
+          </div>
         )}
         {!collapsed && (
           <button
