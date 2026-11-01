@@ -1,15 +1,3 @@
-// ----------------------------------------------------------------------------
-// Realtime (Socket.IO) — BOILERPLATE stub
-//
-// Real-time sync is disabled until the backend Socket.IO server exists. This
-// stub returns a no-op socket so every `getSocket().on(...)`, `.emit(...)`,
-// `connectSocket()` etc. in the app keeps working without a server.
-//
-//   👉  WHEN THE BACKEND IS READY:
-//        1. Uncomment the "REAL SOCKET" block below.
-//        2. Delete — or comment out — the "MOCK SOCKET" block at the bottom.
-// ----------------------------------------------------------------------------
-
 import { io } from "socket.io-client";
 import { getToken } from "./api";
 
@@ -22,7 +10,7 @@ export const getSocket = () => {
   if (!socket) {
     socket = io(URL, {
       autoConnect: false,
-      auth: { token: getToken() },
+      auth: (cb) => cb({ token: getToken() }),
       transports: ["websocket"],
     });
   }
@@ -31,7 +19,6 @@ export const getSocket = () => {
 
 export const connectSocket = () => {
   const s = getSocket();
-  s.auth = { token: getToken() };
   if (!s.connected) s.connect();
   return s;
 };
