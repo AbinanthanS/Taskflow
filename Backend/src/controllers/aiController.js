@@ -1,45 +1,60 @@
-const { query } = require("../config/db");
+const { query, withTransaction } = require("../config/db");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 const ai = require("../services/aiService");
 const { emitToBoard, logActivity } = require("../realtime");
+const { isUuid } = require("../middleware/validateUuid");
 
 const generateTasks = asyncHandler(async (req, res) => {
-
-    const goal = (req.body.goal || "").trim();
+    // Cap goal at 500 chars
+    let goal = (req.body.goal || "").trim();
     if (!goal) throw ApiError.badRequest("A project goal is required");
+    if (goal.length > 500) throw ApiError.badRequest("Project goal must be 500 characters or fewer");
     const count = Math.min(Math.max(parseInt(req.body.count, 10) || 6, 1), 15);
+
+    // Validate column_id BEFORE calling Gemini
+    const column_id = req.body.column_id || null;
+    if (column_id) {
+        if (!isUuid(column_id)) throw ApiError.badRequest("Invalid id");
+        const colRes = await query("SELECT id FROM columns WHERE id = $1 AND board_id = $2", [
+            column_id,
+            req.board.id,
+        ]);
+        if (!colRes.rows.length) throw ApiError.badRequest("column_id does not belong to this board");
+    }
 
     const suggestions = await ai.generateTasks(goal, count);
 
-    if (!req.body.column_id){
+    if (!column_id) {
         return res.json({ tasks: suggestions, persisted: false });
     }
 
-    const colRes = await query("SELECT id FROM columns WHERE id = $1 AND board_id = $2", [
-        req.body.column_id,
-        req.board.id,
-    ]);
-
-    if (!colRes.rows.length) throw ApiError.badRequest("column_id does not belong to this board");
-
-    const baseRes = await query(
-        "SELECT COALESCE(MAX(position), 0) AS pos FROM tasks WHERE column_id = $1",
-        [req.body.column_id]
-    );
-    let pos = Number(baseRes.rows[0].pos);
-    const created = [];
-
-    for (const s of suggestions){
-        pos += 1000;
-        const { rows } = await query(
-            `INSERT INTO tasks (board_id, column_id, title, description, priority, position, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *`,
-            [req.board.id, req.body.column_id, s.title, s.description, s.priority, pos, req.user.id]
+    // Insert all tasks in a single transaction; emit events only after commit
+    const created = await withTransaction(async (client) => {
+        // Compute base position once
+        const baseRes = await client.query(
+            "SELECT COALESCE(MAX(position), 0) AS pos FROM tasks WHERE column_id = $1",
+            [column_id]
         );
-        created.push(rows[0]);
-        emitToBoard(req.board.id, "task:created", rows[0]);
+        let pos = Number(baseRes.rows[0].pos);
+        const inserted = [];
+
+        for (const s of suggestions) {
+            pos += 1000;
+            const { rows } = await client.query(
+                `INSERT INTO tasks (board_id, column_id, title, description, priority, position, created_by)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *`,
+                [req.board.id, column_id, s.title, s.description, s.priority, pos, req.user.id]
+            );
+            inserted.push(rows[0]);
+        }
+        return inserted;
+    });
+
+    // Emit after commit
+    for (const t of created) {
+        emitToBoard(req.board.id, "task:created", t);
     }
 
     await logActivity({
@@ -49,16 +64,19 @@ const generateTasks = asyncHandler(async (req, res) => {
         message: `${req.user.name} generated ${created.length} tasks with AI`,
         metadata: { goal, count: created.length },
     });
-    
-    res.status(201).json({ tasks: created, persisted: true });
 
+    res.status(201).json({ tasks: created, persisted: true });
 });
 
 const breakdownTask = asyncHandler(async (req, res) => {
     let { title, description } = req.body;
+    // Cap lengths
+    if (title) title = String(title).slice(0, 200);
+    if (description) description = String(description).slice(0, 5000);
     const count = Math.min(Math.max(parseInt(req.body.count, 10) || 5, 1), 12);
 
-    if (req.body.taskId){
+    if (req.body.taskId) {
+        if (!isUuid(String(req.body.taskId))) throw ApiError.badRequest("Invalid id");
         const { rows } = await query(
             "SELECT title, description FROM tasks WHERE id = $1 AND board_id = $2",
             [req.body.taskId, req.board.id]
@@ -83,14 +101,13 @@ const summarizeBoard = asyncHandler(async (req, res) => {
     const columns = colsRes.rows.map((c) => ({
         title: c.title,
         tasks: tasksRes.rows.filter((t) => t.column_id === c.id),
-
     }));
 
     const summary = await ai.summarizeBoard({
         boardTitle: boardRes.rows[0]?.title || "Board",
         columns,
     });
-    res.json({summary});
+    res.json({ summary });
 });
 
-module.exports = {generateTasks, breakdownTask, summarizeBoard};
+module.exports = { generateTasks, breakdownTask, summarizeBoard };

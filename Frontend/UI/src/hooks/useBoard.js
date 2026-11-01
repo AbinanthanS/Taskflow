@@ -65,7 +65,16 @@ export const useBoard = (boardId) => {
     const onColCreated = (c) => setColumns((p) => [...p, c].sort((a, b) => a.position - b.position));
     const onColUpdated = (c) =>
       setColumns((p) => p.map((x) => (x.id === c.id ? c : x)).sort((a, b) => a.position - b.position));
-    const onColDeleted = ({ id }) => setColumns((p) => p.filter((x) => x.id !== id));
+    const onColDeleted = ({ id }) => {
+      setColumns((p) => p.filter((x) => x.id !== id));
+      // Also remove tasks that belonged to this column
+      setTasks((p) => p.filter((t) => t.column_id !== id));
+    };
+    const onColRebalanced = ({ columnId, tasks: rebalancedTasks }) => {
+      if (!rebalancedTasks) return;
+      const posMap = new Map(rebalancedTasks.map((t) => [t.id, t.position]));
+      setTasks((p) => p.map((t) => posMap.has(t.id) ? { ...t, position: posMap.get(t.id) } : t));
+    };
     const onBoardUpdated = (b) => setBoard(b);
     const onPresenceSync = ({ users }) => setPresence(users || []);
     const onPresenceJoin = ({ user }) =>
@@ -79,6 +88,7 @@ export const useBoard = (boardId) => {
     socket.on("column:created", onColCreated);
     socket.on("column:updated", onColUpdated);
     socket.on("column:deleted", onColDeleted);
+    socket.on("column:rebalanced", onColRebalanced);
     socket.on("board:updated", onBoardUpdated);
     socket.on("presence:sync", onPresenceSync);
     socket.on("presence:join", onPresenceJoin);
@@ -93,6 +103,7 @@ export const useBoard = (boardId) => {
       socket.off("column:created", onColCreated);
       socket.off("column:updated", onColUpdated);
       socket.off("column:deleted", onColDeleted);
+      socket.off("column:rebalanced", onColRebalanced);
       socket.off("board:updated", onBoardUpdated);
       socket.off("presence:sync", onPresenceSync);
       socket.off("presence:join", onPresenceJoin);

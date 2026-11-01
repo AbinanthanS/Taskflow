@@ -1,12 +1,16 @@
 const { query, withTransaction } = require("../config/db");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
-const { emitToBoard, logActivity } = require("../realtime");
-const { getIo, boardRoom, userRoom } = require("../realtime");
+const { emitToBoard, logActivity, getIo, boardRoom, userRoom } = require("../realtime");
 
 const DEFAULT_COLUMNS = ["Todo", "In Progress", "Review", "Done"];
+const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 const listBoards = asyncHandler(async (req, res) => {
+    // Pagination
+    const limit = Math.min(parseInt(req.query.limit, 10) || 200, 500);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
     const { rows } = await query(
         `SELECT b.*,
                 (b.owner_id = $1)                  AS is_owner,
@@ -15,19 +19,21 @@ const listBoards = asyncHandler(async (req, res) => {
             FROM boards b
             LEFT JOIN board_members mm ON mm.board_id = b.id AND mm.user_id = $1
             WHERE b.owner_id = $1 OR mm.user_id = $1
-            ORDER BY b.updated_at DESC`,
-            [req.user.id]
+            ORDER BY b.updated_at DESC
+            LIMIT $2 OFFSET $3`,
+            [req.user.id, limit, offset]
     );
     res.json({ boards: rows });
 });
 
 const createBoard = asyncHandler(async (req, res) => {
-
     const title = (req.body.title || "").trim();
     const description = (req.body.description || "").trim() || null;
     const color = req.body.color || "#6366f1";
 
     if (!title) throw ApiError.badRequest("Board title is required");
+    if (title.length > 120) throw ApiError.badRequest("Board title must be 120 characters or fewer");
+    if (!COLOR_RE.test(color)) throw ApiError.badRequest("color must be a valid hex color (#rrggbb)");
 
     const board = await withTransaction(async (client) => {
         const { rows } = await client.query(
@@ -91,15 +97,35 @@ const getBoard = asyncHandler(async (req, res) => {
 
 const updateBoard = asyncHandler(async (req, res) => {
     const { title, description, color } = req.body;
+
+    // Validate fields that are present
+    if (title !== undefined) {
+        const t = (title || "").trim();
+        if (!t) throw ApiError.badRequest("Board title cannot be empty");
+        if (t.length > 120) throw ApiError.badRequest("Board title must be 120 characters or fewer");
+    }
+    if (color !== undefined && color !== null && !COLOR_RE.test(color))
+        throw ApiError.badRequest("color must be a valid hex color (#rrggbb)");
+
+    // Dynamic PATCH — only update present fields
+    const updates = [];
+    const params = [req.board.id];
+
+    const addField = (col, val) => {
+        params.push(val);
+        updates.push(`${col} = $${params.length}`);
+    };
+
+    if (title !== undefined) addField("title", (title || "").trim());
+    if (description !== undefined) addField("description", description ?? null);
+    if (color !== undefined) addField("color", color ?? null);
+
+    if (!updates.length) throw ApiError.badRequest("No fields to update");
+    updates.push("updated_at = now()");
+
     const { rows } = await query(
-        `UPDATE boards
-            SET title = COALESCE($2, title),
-                description = COALESCE($3, description),
-                color = COALESCE($4, color),
-                updated_at = now()
-            WHERE id = $1
-            RETURNING *`,
-            [req.board.id, title ?? null, description ?? null, color ?? null]
+        `UPDATE boards SET ${updates.join(", ")} WHERE id = $1 RETURNING *`,
+        params
     );
     emitToBoard(req.board.id, "board:updated", rows[0]);
     res.json({ board: rows[0] });
@@ -128,15 +154,13 @@ const getActivity = asyncHandler(async (req, res) => {
 });
 
 const addMember = asyncHandler(async (req, res) => {
-    // requireRole("admin") is enforced in the router; this controller adds finer rules.
     const callerId = req.user.id;
-    const callerRole = req.board.role;           // "owner" | "admin"
+    const callerRole = req.board.role;
     const ownerId = req.board.owner_id;
 
     const email = (req.body.email || "").trim().toLowerCase();
     if (!email) throw ApiError.badRequest("Member email is required");
 
-    // Admins can only add members, not other admins. Only owner can set admin.
     const requestedRole = req.body.role === "admin" ? "admin" : "member";
     if (requestedRole === "admin" && callerRole !== "owner") {
         throw ApiError.forbidden("Only the owner can grant the admin role");
@@ -146,14 +170,11 @@ const addMember = asyncHandler(async (req, res) => {
     const user = userRes.rows[0];
     if (!user) throw ApiError.notFound("No user found with that email");
 
-    // Cannot add/change the owner's role
     if (String(user.id) === String(ownerId)) {
         throw ApiError.badRequest("Cannot change the board owner's membership");
     }
 
-    // Admin cannot change another admin's role
     if (callerRole === "admin") {
-        // Check existing role
         const existingRes = await query(
             "SELECT role FROM board_members WHERE board_id = $1 AND user_id = $2",
             [req.board.id, user.id]
@@ -184,17 +205,14 @@ const addMember = asyncHandler(async (req, res) => {
 });
 
 const removeMember = asyncHandler(async (req, res) => {
-    // requireRole("admin") is enforced in the router
     const callerRole = req.board.role;
     const ownerId = req.board.owner_id;
     const { userId } = req.params;
 
-    // Cannot remove the owner
     if (String(userId) === String(ownerId)) {
         throw ApiError.badRequest("Cannot remove the board owner");
     }
 
-    // Only owner can remove an admin
     if (callerRole === "admin") {
         const targetRes = await query(
             "SELECT role FROM board_members WHERE board_id = $1 AND user_id = $2",
@@ -212,7 +230,6 @@ const removeMember = asyncHandler(async (req, res) => {
     );
     if (!result.rowCount) throw ApiError.notFound("Member not found");
 
-    // Unassign that user's tasks on this board
     await query(
         "UPDATE tasks SET assignee_id = NULL WHERE board_id = $1 AND assignee_id = $2",
         [req.board.id, userId]
@@ -226,10 +243,8 @@ const removeMember = asyncHandler(async (req, res) => {
         metadata: { memberId: userId },
     });
 
-    // Emit realtime events
     emitToBoard(req.board.id, "member:removed", { boardId: req.board.id, userId });
 
-    // Force that user's sockets out of the room
     const io = getIo();
     if (io) {
         const room = boardRoom(req.board.id);
