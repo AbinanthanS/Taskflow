@@ -1,4 +1,5 @@
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 const { requireAuth } = require("../middleware/auth");
 const { requireBoardAccess, requireRole } = require("../middleware/boardAccess");
 const { validateUuidParams } = require("../middleware/validateUuid");
@@ -8,6 +9,16 @@ const task = require("../controllers/taskController");
 const ai = require("../controllers/aiController");
 
 const router = express.Router();
+
+// AI rate limiter: 10 req / 10 min per authenticated user
+const aiLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 10,
+    keyGenerator: (req) => req.user?.id || "anonymous",
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "AI rate limit exceeded, please try again later" },
+});
 
 router.use(requireAuth);
 
@@ -40,9 +51,9 @@ router.patch("/:boardId/tasks/:taskId", vBoardTask, requireBoardAccess, task.upd
 router.patch("/:boardId/tasks/:taskId/move", vBoardTask, requireBoardAccess, task.moveTask);
 router.delete("/:boardId/tasks/:taskId", vBoardTask, requireBoardAccess, task.deleteTask);
 
-// AI routes
-router.post("/:boardId/ai/generate-tasks", vBoard, requireBoardAccess, ai.generateTasks);
-router.post("/:boardId/ai/breakdown", vBoard, requireBoardAccess, ai.breakdownTask);
-router.post("/:boardId/ai/summary", vBoard, requireBoardAccess, ai.summarizeBoard);
+// AI routes (rate limited per user, applied after requireAuth which is already above)
+router.post("/:boardId/ai/generate-tasks", vBoard, aiLimiter, requireBoardAccess, ai.generateTasks);
+router.post("/:boardId/ai/breakdown", vBoard, aiLimiter, requireBoardAccess, ai.breakdownTask);
+router.post("/:boardId/ai/summary", vBoard, aiLimiter, requireBoardAccess, ai.summarizeBoard);
 
 module.exports = router;

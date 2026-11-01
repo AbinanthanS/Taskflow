@@ -70,7 +70,7 @@ export const useBoard = (boardId) => {
       // Also remove tasks that belonged to this column
       setTasks((p) => p.filter((t) => t.column_id !== id));
     };
-    const onColRebalanced = ({ columnId, tasks: rebalancedTasks }) => {
+    const onColRebalanced = ({ tasks: rebalancedTasks }) => {
       if (!rebalancedTasks) return;
       const posMap = new Map(rebalancedTasks.map((t) => [t.id, t.position]));
       setTasks((p) => p.map((t) => posMap.has(t.id) ? { ...t, position: posMap.get(t.id) } : t));

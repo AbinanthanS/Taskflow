@@ -1,18 +1,16 @@
 require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
 const { pool } = require("../config/db");
+const { runMigrations } = require("./migrate");
 
 (async () => {
-    try{
-        const sql = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
-        console.log("Applying schema...");
-        await pool.query(sql);
-        console.log("Schema Applied Successfully.");
-    }catch (err){
-        console.error("Failed to apply schema: ",err.message);
+    try {
+        console.log("Initializing database by running migrations...");
+        await runMigrations();
+        console.log("Database initialized successfully.");
+    } catch (err) {
+        console.error("Failed to initialize database:", err.message);
         process.exitCode = 1;
-    }finally{
+    } finally {
         await pool.end();
     }
 })();

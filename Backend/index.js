@@ -1,41 +1,39 @@
 require("dotenv").config();
 
 const http = require("http");
-const express = require("express");
-const cors = require("cors");
-
-const apiRoutes = require("./src/routes");
-
-const { errorHandler, notFoundHandler } = require("./src/middleware/errorHandler");
+const app = require("./src/app");
 const { initSocket } = require("./src/socket");
-
-const app = express();
-
-app.use(
-    cors({
-        origin: process.env.CLIENT_URL || "http://localhost:5173",
-        credentials: true,
-    }),
-);
-
-app.use(express.json({ limit: "1mb"}));
-
-app.get("/", (_req, res) => 
-    res.json({name: "AI-Taskflow API", status: "running"}),
-);
-
-app.use("/api", apiRoutes);
-
-app.use(notFoundHandler);
-app.use(errorHandler);
+const { pool } = require("./src/config/db");
 
 const server = http.createServer(app);
-initSocket(server);
+const io = initSocket(server);
 
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-    console.log(`API listening to http://localhost:${PORT}`);
+    console.log(`API listening on http://localhost:${PORT}`);
 });
 
-module.exports = app;
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+const shutdown = (signal) => {
+    console.log(`\n[${signal}] Gracefully shutting down…`);
+    server.close(async () => {
+        try {
+            io.close();
+            await pool.end();
+            console.log("Shutdown complete.");
+        } catch (err) {
+            console.error("Error during shutdown:", err.message);
+        }
+        process.exit(0);
+    });
+
+    // Force exit after 10 seconds if graceful close stalls
+    setTimeout(() => {
+        console.error("Forced exit after timeout.");
+        process.exit(1);
+    }, 10_000).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
