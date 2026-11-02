@@ -13,7 +13,17 @@ const Avatar = ({ name, id, src, size = "md", className, title }) => (
     )}
     style={{ backgroundColor: src ? undefined : colorFromId(id || name || "") }}
   >
-    {src ? <img src={src} alt={name} className="h-full w-full object-cover" /> : initials(name)}
+    {src ? (
+      <img
+        src={src}
+        alt={name}
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      initials(name)
+    )}
   </div>
 );
 

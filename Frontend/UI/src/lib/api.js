@@ -1,24 +1,15 @@
-// ----------------------------------------------------------------------------
-// API layer — BOILERPLATE (mock) build
-//
-// The whole UI runs on local mock data so you can build the frontend before the
-// backend exists. Components never change — they only import authApi/boardApi/
-// taskApi/columnApi/aiApi/userApi from here.
-//
-//   👉  WHEN THE BACKEND IS READY:
-//        1. Uncomment the "REAL API" block below (it's the actual axios code).
-//        2. Delete — or comment out — the "MOCK API" block at the bottom.
-//        3. Remove the `./mockData` import.
-//      That's the only file you touch to go live.
-// ----------------------------------------------------------------------------
+import axios from "axios";
 
-
+/**
+ * Token Storage:
+ * Currently stored in localStorage for client-side simplicity and SSR/Vite dev ergonomics.
+ * Tradeoff: localStorage is accessible to JavaScript and vulnerable to XSS attacks.
+ * TODO: Migrate session storage to httpOnly, Secure, SameSite cookies with CSRF protection.
+ */
 const TOKEN_KEY = "kanban_token";
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
-
-import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
@@ -30,17 +21,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Normalize errors to a readable message; bounce to login on 401.
+// Normalize errors to a readable message; notify auth system on 401 without hard reloads.
 api.interceptors.response.use(
   (res) => res,
   (error) => {
+    const status = error.response?.status;
     const message =
       error.response?.data?.error || error.message || "Something went wrong";
-    if (error.response?.status === 401 && getToken()) {
+
+    if (status === 401 && getToken()) {
       clearToken();
-      if (!location.pathname.startsWith("/login")) location.assign("/login");
+      window.dispatchEvent(new CustomEvent("auth:expired"));
     }
-    return Promise.reject(new Error(message));
+
+    const err = new Error(message);
+    err.status = status;
+    return Promise.reject(err);
   }
 );
 
@@ -97,4 +93,3 @@ export const aiApi = {
     api.post(`/boards/${boardId}/ai/breakdown`, data).then((r) => r.data.subtasks),
   summary: (boardId) => api.post(`/boards/${boardId}/ai/summary`).then((r) => r.data.summary),
 };
-
