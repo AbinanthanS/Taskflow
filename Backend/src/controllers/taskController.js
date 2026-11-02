@@ -319,4 +319,13 @@ const deleteTask = asyncHandler(async (req, res) => {
     res.json({ success: true });
 });
 
-module.exports = { listTasks, createTask, updateTask, moveTask, deleteTask };
+module.exports = {
+    listTasks,
+    createTask,
+    updateTask,
+    moveTask,
+    deleteTask,
+    rebalanceColumn,
+    REBALANCE_GAP_THRESHOLD,
+    ensureAssigneeIsMember,
+};

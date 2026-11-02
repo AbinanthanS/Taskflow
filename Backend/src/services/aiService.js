@@ -160,4 +160,10 @@ No markdown, no commentary.`;
     return extractJson(await runPrompt(prompt));
 };
 
-module.exports = { generateTasks, breakdownTask, summarizeBoard };
+module.exports = {
+    generateTasks,
+    breakdownTask,
+    summarizeBoard,
+    extractJson,
+    sanitizeForPrompt,
+};
